@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa Hàng Trực Tuyến - Vue 3 & Tailwind CSS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome cho Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <div id="app" class="min-h-screen flex flex-col justify-between">
+        
+        <!-- HEADER -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+                <!-- Logo -->
+                <div class="flex items-center gap-2 cursor-pointer" @click="currentCategory = 'Tất cả'">
+                    <div class="bg-primary text-white p-2.5 rounded-xl font-bold text-xl flex items-center justify-center">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold text-gray-900 tracking-tight">VueShop</span>
+                        <span class="block text-xs text-gray-500">Cửa hàng công nghệ & đời sống</span>
+                    </div>
+                </div>
+
+                <!-- Thanh tìm kiếm -->
+                <div class="flex-1 max-w-xl hidden md:block">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            placeholder="Tìm kiếm sản phẩm mong muốn..." 
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-primary focus:outline-none transition text-sm"
+                        >
+                    </div>
+                </div>
+
+                <!-- Icon Giỏ hàng -->
+                <div class="flex items-center gap-4">
+                    <button 
+                        @click="isCartOpen = true" 
+                        class="relative bg-gray-100 hover:bg-gray-200 p-3 rounded-xl transition flex items-center gap-2 text-gray-700 font-medium text-sm"
+                    >
+                        <i class="fa-solid fa-cart-shopping text-lg"></i>
+                        <span class="hidden sm:inline">Giỏ hàng</span>
+                        <span v-if="cartItemCount > 0" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shadow">
+                            {{ cartItemCount }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh tìm kiếm cho Mobile -->
+            <div class="px-4 pb-3 md:hidden">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input 
+                        v-model="searchQuery" 
+                        type="text" 
+                        placeholder="Tìm kiếm sản phẩm..." 
+                        class="w-full pl-10 pr-4 py-2 bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-primary focus:outline-none transition text-sm"
+                    >
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+            
+            <!-- Banner Khuyến Mãi -->
+            <div class="bg-gradient-to-r from-primary to-indigo-700 rounded-3xl p-6 sm:p-10 text-white mb-10 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="space-y-3 text-center md:text-left">
+                    <span class="bg-white/20 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Ưu đãi mùa hè</span>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">Siêu Sale Công Nghệ Giảm Đến 40%</h1>
+                    <p class="text-indigo-100 text-sm sm:text-base max-w-xl">Khám phá các sản phẩm phụ kiện thông minh, thiết bị âm thanh và đồ gia dụng chất lượng cao với giá tốt nhất.</p>
+                </div>
+                <button @click="currentCategory = 'Tất cả'; searchQuery = ''" class="bg-white text-primary font-bold px-6 py-3 rounded-xl shadow hover:bg-gray-100 transition whitespace-nowrap">
+                    Khám phá ngay
+                </button>
+            </div>
+
+            <!-- Bộ lọc & Sắp xếp -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <!-- Danh mục -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+                    <button 
+                        v-for="cat in categories" 
+                        :key="cat"
+                        @click="currentCategory = cat"
+                        :class="['px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition', currentCategory === cat ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']"
+                    >
+                        {{ cat }}
+                    </button>
+                </div>
+
+                <!-- Sắp xếp -->
+                <div class="flex items-center gap-3 justify-end">
+                    <span class="text-sm text-gray-500 whitespace-nowrap">Sắp xếp:</span>
+                    <select 
+                        v-model="sortBy" 
+                        class="bg-gray-100 border border-transparent rounded-xl px-3 py-2 text-sm focus:bg-white focus:border-primary focus:outline-none transition cursor-pointer font-medium"
+                    >
+                        <option value="default">Mới nhất</option>
+                        <option value="price-asc">Giá: Thấp đến Cao</option>
+                        <option value="price-desc">Giá: Cao đến Thấp</option>
+                        <option value="rating">Đánh giá cao nhất</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Danh sách sản phẩm -->
+            <div v-if="filteredProducts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div 
+                    v-for="product in filteredProducts" 
+                    :key="product.id" 
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col justify-between group"
+                >
+                    <!-- Hình ảnh & Badge -->
+                    <div class="relative overflow-hidden bg-gray-100 aspect-square">
+                        <img 
+                            :src="product.image" 
+                            :alt="product.name" 
+                            class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        >
+                        <span v-if="product.discount" class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-lg shadow">
+                            -{{ product.discount }}%
+                        </span>
+                        <span class="absolute top-3 right-3 bg-white/80 backdrop-blur-sm text-xs font-semibold px-2 py-1 rounded-lg text-gray-700">
+                            {{ product.category }}
+                        </span>
+                    </div>
+
+                    <!-- Thông tin sản phẩm -->
+                    <div class="p-4 flex flex-col flex-grow justify-between">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 group-hover:text-primary transition line-clamp-2 mb-1">
+                                {{ product.name }}
+                            </h3>
+                            
+                            <!-- Đánh giá sao -->
+                            <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
+                                <i v-for="n in 5" :key="n" :class="[n <= Math.floor(product.rating) ? 'fa-solid fa-star' : 'fa-regular fa-star']"></i>
+                                <span class="text-gray-400 ml-1">({{ product.reviewsCount }})</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <!-- Giá tiền -->
+                            <div class="flex items-baseline gap-2 mb-4">
+                                <span class="text-lg font-bold text-red-600">{{ formatPrice(calculateDiscountPrice(product)) }}</span>
+                                <span v-if="product.discount" class="text-sm text-gray-400 line-through">{{ formatPrice(product.price) }}</span>
+                            </div>
+
+                            <!-- Nút Thêm vào giỏ -->
+                            <button 
+                                @click="addToCart(product)" 
+                                class="w-full bg-primary/10 hover:bg-primary text-primary hover:text-white font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2"
+                            >
+                                <i class="fa-solid fa-cart-plus"></i> Thêm vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trạng thái không tìm thấy sản phẩm -->
+            <div v-else class="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                <div class="text-5xl text-gray-300 mb-4">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-700 mb-1">Không tìm thấy sản phẩm phù hợp</h3>
+                <p class="text-gray-500 text-sm mb-4">Hãy thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
+                <button @click="searchQuery = ''; currentCategory = 'Tất cả'" class="bg-primary text-white font-medium px-4 py-2 rounded-xl text-sm shadow hover:bg-indigo-700 transition">
+                    Xem tất cả sản phẩm
+                </button>
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-white border-t border-gray-200 mt-12 py-8 text-center text-sm text-gray-500">
+            <p>&copy; 2026 VueShop E-commerce. Phát triển bởi Senior Frontend Developer.</p>
+        </footer>
+
+        <!-- CART DRAWER / MODAL -->
+        <div v-if="isCartOpen" class="fixed inset-0 z-50 overflow-hidden">
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="isCartOpen = false"></div>
+
+            <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+                <div class="w-screen max-w-md bg-white shadow-xl flex flex-col">
+                    <!-- Drawer Header -->
+                    <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-cart-shopping text-primary"></i>
+                            <h2 class="text-lg font-bold text-gray-900">Giỏ hàng của bạn ({{ cartItemCount }})</h2>
+                        </div>
+                        <button @click="isCartOpen = false" class="text-gray-400 hover:text-gray-600 p-2">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Cart Items List -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div v-if="cart.length === 0" class="text-center py-12 text-gray-400">
+                            <i class="fa-solid fa-basket-shopping text-4xl mb-3"></i>
+                            <p class="text-sm">Giỏ hàng của bạn đang trống</p>
+                        </div>
+
+                        <div v-for="item in cart" :key="item.id" class="flex gap-4 items-center bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                            <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded-xl bg-white">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-sm text-gray-800 line-clamp-1">{{ item.name }}</h4>
+                                <div class="text-red-600 font-bold text-sm my-0.5">{{ formatPrice(calculateDiscountPrice(item)) }}</div>
+                                
+                                <!-- Tăng giảm số lượng -->
+                                <div class="flex items-center gap-2 mt-2">
+                                    <button @click="decreaseQuantity(item)" class="w-6 h-6 bg-white border rounded-md flex items-center justify-center text-xs hover:bg-gray-100">-</button>
+                                    <span class="text-sm font-medium w-6 text-center">{{ item.quantity }}</span>
+                                    <button @click="increaseQuantity(item)" class="w-6 h-6 bg-white border rounded-md flex items-center justify-center text-xs hover:bg-gray-100">+</button>
+                                </div>
+                            </div>
+                            <button @click="removeFromCart(item.id)" class="text-gray-400 hover:text-red-500 p-2 transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Drawer Footer & Tổng tiền -->
+                    <div v-if="cart.length > 0" class="p-6 border-t border-gray-100 bg-gray-50 space-y-4">
+                        <!-- Ô nhập mã giảm giá -->
+                        <div class="flex gap-2">
+                            <input 
+                                v-model="couponCode" 
+                                type="text" 
+                                placeholder="Nhập mã (VD: SALE10)" 
+                                class="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm uppercase focus:border-primary focus:outline-none"
+                            >
+                            <button @click="applyCoupon" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-900 transition">
+                                Áp dụng
+                            </button>
+                        </div>
+                        <p v-if="appliedCouponMessage" :class="['text-xs font-medium', isCouponValid ? 'text-green-600' : 'text-red-500']">
+                            {{ appliedCouponMessage }}
+                        </p>
+
+                        <!-- Tổng tiền thanh toán -->
+                        <div class="space-y-1 text-sm pt-2 border-t border-gray-200">
+                            <div class="flex justify-between text-gray-500">
+                                <span>Tạm tính:</span>
+                                <span>{{ formatPrice(cartSubTotal) }}</span>
+                            </div>
+                            <div v-if="discountAmount > 0" class="flex justify-between text-green-600 font-medium">
+                                <span>Giảm giá (Mã coupon):</span>
+                                <span>-{{ formatPrice(discountAmount) }}</span>
+                            </div>
+                            <div class="flex justify-between text-base font-bold text-gray-900 pt-1">
+                                <span>Tổng cộng:</span>
+                                <span class="text-red-600 text-lg">{{ formatPrice(cartTotal) }}</span>
+                            </div>
+                        </div>
+
+                        <button 
+                            @click="isCartOpen = false; isCheckoutOpen = true" 
+                            class="w-full bg-primary hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow transition text-sm flex items-center justify-center gap-2"
+                        >
+                            Tiến hành thanh toán <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL THANH TOÁN (CHECKOUT) -->
+        <div v-if="isCheckoutOpen" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isCheckoutOpen = false"></div>
+
+            <div class="relative bg-white rounded-3xl shadow-xl max-w-xl w-full p-6 sm:p-8 z-10 overflow-hidden">
+                <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Thông tin thanh toán</h2>
+                    <button @click="isCheckoutOpen = false" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitCheckout" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên người nhận *</label>
+                        <input v-model="checkoutForm.fullName" required type="text" placeholder="Nguyễn Văn A" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:border-primary focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại *</label>
+                            <input v-model="checkoutForm.phone" required type="tel" placeholder="0901234567" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:border-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input v-model="checkoutForm.email" type="email" placeholder="example@gmail.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:border-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ giao hàng chi tiết *</label>
+                        <textarea v-model="checkoutForm.address" required rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:border-primary focus:outline-none resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phương thức thanh toán *</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:border-primary transition" :class="{'border-primary bg-indigo-50/50': checkoutForm.paymentMethod === 'cod'}">
+                                <input type="radio" v-model="checkoutForm.paymentMethod" value="cod" class="text-primary">
+                                <span class="text-sm font-medium">Thanh toán khi nhận hàng (COD)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:border-primary transition" :class="{'border-primary bg-indigo-50/50': checkoutForm.paymentMethod === 'qr'}">
+                                <input type="radio" v-model="checkoutForm.paymentMethod" value="qr" class="text-primary">
+                                <span class="text-sm font-medium">Chuyển khoản mã QR</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:border-primary transition" :class="{'border-primary bg-indigo-50/50': checkoutForm.paymentMethod === 'momo'}">
+                                <input type="radio" v-model="checkoutForm.paymentMethod" value="momo" class="text-primary">
+                                <span class="text-sm font-medium">Ví điện tử MoMo</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-2xl flex items-center justify-between text-sm font-semibold">
+                        <span>Tổng số tiền cần thanh toán:</span>
+                        <span class="text-red-600 text-lg">{{ formatPrice(cartTotal) }}</span>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" @click="isCheckoutOpen = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition text-sm">
+                            Quay lại
+                        </button>
+                        <button type="submit" class="flex-1 bg-primary hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow transition text-sm">
+                            Xác nhận đặt hàng
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- THÔNG BÁO THÀNH CÔNG (SUCCESS MODAL) -->
+        <div v-if="isSuccessModalOpen" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="isSuccessModalOpen = false"></div>
+            <div class="relative bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center z-10 space-y-4">
+                <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-2xl font-extrabold text-gray-900">Đặt hàng thành công!</h3>
+                <p class="text-gray-500 text-sm">Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được ghi nhận và sẽ được vận chuyển trong thời gian sớm nhất.</p>
+                <button @click="resetAfterSuccess" class="w-full bg-primary text-white font-bold py-3 rounded-xl shadow hover:bg-indigo-700 transition text-sm">
+                    Tiếp tục mua sắm
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- VUE SCRIPT LOGIC -->
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                // Trạng thái giao diện
+                const isCartOpen = ref(false);
+                const isCheckoutOpen = ref(false);
+                const isSuccessModalOpen = ref(false);
+
+                // Dữ liệu tìm kiếm và bộ lọc
+                const searchQuery = ref('');
+                const currentCategory = ref('Tất cả');
+                const sortBy = ref('default');
+
+                // Danh mục sản phẩm
+                const categories = ['Tất cả', 'Thiết bị Điện tử', 'Phụ kiện', 'Âm thanh', 'Gia dụng'];
+
+                // Dữ liệu mẫu sản phẩm (Mock Data chuẩn Tiếng Việt)
+                const products = ref([
+                    { id: 1, name: 'Tai Nghe Bluetooth Chống Ồn Chủ Động ANC', category: 'Âm thanh', price: 2500000, discount: 15, rating: 4.8, reviewsCount: 124, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80' },
+                    { id: 2, name: 'Đồng Hồ Thông Minh Smartwatch Series 8', category: 'Thiết bị Điện tử', price: 3200000, discount: 20, rating: 4.6, reviewsCount: 98, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80' },
+                    { id: 3, name: 'Bút Cảm Ứng Stylus Pen Cho Máy Tính Bảng', category: 'Phụ kiện', price: 850000, discount: 10, rating: 4.7, reviewsCount: 45, image: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?w=500&q=80' },
+                    { id: 4, name: 'Loa Không Dây Mini Chống Nước IPX7', category: 'Âm thanh', price: 1200000, discount: 25, rating: 4.9, reviewsCount: 210, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&q=80' },
+                    { id: 5, name: 'Bàn Phím Cơ Không Dây RGB Gaming', category: 'Phụ kiện', price: 1890000, discount: 5, rating: 4.5, reviewsCount: 76, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&q=80' },
+                    { id: 6, name: 'Máy Lọc Không Khí Mini Để Bàn', category: 'Gia dụng', price: 1450000, discount: 30, rating: 4.4, reviewsCount: 52, image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=500&q=80' },
+                    { id: 7, name: 'Chuột Không Dây Công Thái Học', category: 'Phụ kiện', price: 650000, discount: 0, rating: 4.3, reviewsCount: 33, image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80' },
+                    { id: 8, name: 'Đèn LED Thông Minh Đổi Màu Để Bàn', category: 'Gia dụng', price: 450000, discount: 10, rating: 4.7, reviewsCount: 89, image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=500&q=80' }
+                ]);
+
+                // Giỏ hàng
+                const cart = ref([]);
+
+                // Coupon / Mã giảm giá
+                const couponCode = ref('');
+                const appliedCoupon = ref(null);
+                const appliedCouponMessage = ref('');
+                const isCouponValid = ref(false);
+
+                // Form Thanh Toán
+                const checkoutForm = ref({
+                    fullName: '',
+                    phone: '',
+                    email: '',
+                    address: '',
+                    paymentMethod: 'cod'
+                });
+
+                // Hàm tính giá sau khi giảm
+                const calculateDiscountPrice = (product) => {
+                    if (!product.discount) return product.price;
+                    return Math.round(product.price * (1 - product.discount / 100));
+                };
+
+                // Hàm định dạng tiền tệ VNĐ
+                const formatPrice = (value) => {
+                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+                };
+
+                // Thêm vào giỏ hàng
+                const addToCart = (product) => {
+                    const existingItem = cart.value.find(item => item.id === product.id);
+                    if (existingItem) {
+                        existingItem.quantity++;
+                    } else {
+                        cart.value.push({ ...product, quantity: 1 });
+                    }
+                    isCartOpen.value = true;
+                };
+
+                // Tăng số lượng trong giỏ
+                const increaseQuantity = (item) => {
+                    item.quantity++;
+                };
+
+                // Giảm số lượng trong giỏ
+                const decreaseQuantity = (item) => {
+                    if (item.quantity > 1) {
+                        item.quantity--;
+                    } else {
+                        removeFromCart(item.id);
+                    }
+                };
+
+                // Xóa sản phẩm khỏi giỏ
+                const removeFromCart = (id) => {
+                    cart.value = cart.value.filter(item => item.id !== id);
+                };
+
+                // Tổng số lượng sản phẩm trên icon giỏ hàng
+                const cartItemCount = computed(() => {
+                    return cart.value.reduce((total, item) => total + item.quantity, 0);
+                });
+
+                // Tạm tính tiền giỏ hàng
+                const cartSubTotal = computed(() => {
+                    return cart.value.reduce((total, item) => total + (calculateDiscountPrice(item) * item.quantity), 0);
+                });
+
+                // Áp dụng mã giảm giá
+                const applyCoupon = () => {
+                    const code = couponCode.value.trim().toUpperCase();
+                    if (code === 'SALE10') {
+                        appliedCoupon.value = 0.1; // Giảm 10%
+                        isCouponValid.value = true;
+                        appliedCouponMessage.value = 'Áp dụng mã giảm giá 10% thành công!';
+                    } else if (code === 'FREESHIP') {
+                        appliedCoupon.value = 50000; // Giảm 50k
+                        isCouponValid.value = true;
+                        appliedCouponMessage.value = 'Áp dụng mã giảm 50.000 VNĐ thành công!';
+                    } else {
+                        appliedCoupon.value = null;
+                        isCouponValid.value = false;
+                        appliedCouponMessage.value = 'Mã giảm giá không hợp lệ hoặc đã hết hạn.';
+                    }
+                };
+
+                // Tính tiền giảm giá
+                const discountAmount = computed(() => {
+                    if (!appliedCoupon.value) return 0;
+                    if (typeof appliedCoupon.value === 'number' && appliedCoupon.value < 1) {
+                        return cartSubTotal.value * appliedCoupon.value;
+                    }
+                    return Math.min(cartSubTotal.value, appliedCoupon.value);
+                });
+
+                // Tổng thanh toán cuối cùng
+                const cartTotal = computed(() => {
+                    return Math.max(0, cartSubTotal.value - discountAmount.value);
+                });
+
+                // Lọc và sắp xếp sản phẩm
+                const filteredProducts = computed(() => {
+                    let result = [...products.value];
+
+                    // Lọc theo danh mục
+                    if (currentCategory.value !== 'Tất cả') {
+                        result = result.filter(p => p.category === currentCategory.value);
+                    }
+
+                    // Lọc theo từ khóa tìm kiếm
+                    if (searchQuery.value.trim() !== '') {
+                        const keyword = searchQuery.value.toLowerCase().trim();
+                        result = result.filter(p => p.name.toLowerCase().includes(keyword));
+                    }
+
+                    // Sắp xếp
+                    if (sortBy.value === 'price-asc') {
+                        result.sort((a, b) => calculateDiscountPrice(a) - calculateDiscountPrice(b));
+                    } else if (sortBy.value === 'price-desc') {
+                        result.sort((a, b) => calculateDiscountPrice(b) - calculateDiscountPrice(a));
+                    } else if (sortBy.value === 'rating') {
+                        result.sort((a, b) => b.rating - a.rating);
+                    }
+
+                    return result;
+                });
+
+                // Gửi đơn hàng thanh toán
+                const submitCheckout = () => {
+                    isCheckoutOpen.value = false;
+                    isSuccessModalOpen.value = true;
+                };
+
+                // Reset sau khi đặt hàng thành công
+                const resetAfterSuccess = () => {
+                    isSuccessModalOpen.value = false;
+                    cart.value = [];
+                    couponCode.value = '';
+                    appliedCoupon.value = null;
+                    appliedCouponMessage.value = '';
+                    checkoutForm.value = { fullName: '', phone: '', email: '', address: '', paymentMethod: 'cod' };
+                };
+
+                return {
+                    isCartOpen,
+                    isCheckoutOpen,
+                    isSuccessModalOpen,
+                    searchQuery,
+                    currentCategory,
+                    sortBy,
+                    categories,
+                    products,
+                    cart,
+                    couponCode,
+                    appliedCouponMessage,
+                    isCouponValid,
+                    checkoutForm,
+                    calculateDiscountPrice,
+                    formatPrice,
+                    addToCart,
+                    increaseQuantity,
+                    decreaseQuantity,
+                    removeFromCart,
+                    cartItemCount,
+                    cartSubTotal,
+                    discountAmount,
+                    cartTotal,
+                    filteredProducts,
+                    applyCoupon,
+                    submitCheckout,
+                    resetAfterSuccess
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

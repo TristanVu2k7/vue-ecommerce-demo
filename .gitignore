@@ -1,0 +1,30 @@
+ .gitconfig
+        .nuget/
+        .vscode-shared/
+        .vscode/
+        AppData/
+        Contacts/
+        Desktop/
+        Documents/
+        Downloads/
+        Favorites/
+        IntelGraphicsProfiles/
+        Links/
+        Music/
+        NTUSER.DAT
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TM.blf
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TM.blf.cnpf
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TMContainer00000000000000000001.regtrans-ms
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TMContainer00000000000000000001.regtrans-ms.cnpf
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TMContainer00000000000000000002.regtrans-ms
+        NTUSER.DAT{b8807d96-c6ec-11f1-b5b1-d30eb75632e7}.TMContainer00000000000000000002.regtrans-ms.cnpf
+        OneDrive/
+        Pictures/
+        Saved Games/
+        Searches/
+        Videos/
+        WPS Cloud Files/
+        battery-report.html
+        ntuser.dat.LOG1
+        ntuser.dat.LOG2
+        ntuser.ini
